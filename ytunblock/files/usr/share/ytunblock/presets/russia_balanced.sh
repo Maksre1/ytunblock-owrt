@@ -10,10 +10,10 @@ set ytunblock.@section[0].faking_strategy='pastseq'
 set ytunblock.@section[0].frag='tcp'
 set ytunblock.@section[0].frag_middle_sni='1'
 set ytunblock.@section[0].frag_sni_reverse='1'
-set ytunblock.@section[0].seg2delay='1'
+set ytunblock.@section[0].seg2delay='0'
 set ytunblock.@section[0].udp_filter_quic='all'
-set ytunblock.@section[0].udp_mode='fake'
-set ytunblock.@section[0].udp_faking_strategy='checksum'
+set ytunblock.@section[0].udp_mode='drop'
+set ytunblock.@section[0].udp_faking_strategy='none'
 EOI
 uci commit ytunblock
 /etc/init.d/ytunblock restart
