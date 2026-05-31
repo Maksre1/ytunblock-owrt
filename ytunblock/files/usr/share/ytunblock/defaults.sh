@@ -73,9 +73,7 @@ EOI
 	exit 0
 fi
 
-while uci -q delete ytunblock.@section[0]; do :; done
-uci -q delete ytunblock.ytunblock 2>/dev/null
+rm -f /tmp/.uci/ytunblock
 cp "$TEMPLATE" "$CONFIG"
-uci commit ytunblock
 
 [ "$FORCE" -eq 1 ] && /etc/init.d/ytunblock restart 2>/dev/null
