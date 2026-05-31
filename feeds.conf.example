@@ -1,5 +1,5 @@
 # Добавьте в feeds.conf.default вашего OpenWrt SDK / buildroot:
-src-git ytunblock https://github.com/YOUR_USER/ytunblock-owrt.git;main
+src-git ytunblock https://github.com/Maksre1/ytunblock-owrt.git;main
 
 # Затем:
 # ./scripts/feeds update ytunblock

@@ -18,7 +18,7 @@
 
 ```sh
 # В каталоге OpenWrt SDK / buildroot:
-echo 'src-git ytunblock https://github.com/YOUR_USER/ytunblock-owrt.git;main' >> feeds.conf
+echo 'src-git ytunblock https://github.com/Maksre1/ytunblock-owrt.git;main' >> feeds.conf
 ./scripts/feeds update ytunblock
 ./scripts/feeds install ytunblock luci-app-ytunblock
 make package/ytunblock/compile package/luci-app-ytunblock/compile V=s
