@@ -79,11 +79,10 @@ echo "$STRATEGIES" | while read -r line; do
     /tmp/ytunblock_test --queue-num=$TEST_QUEUE --packet-mark=65536 --tls=enabled $strat_args --quic-drop >/dev/null 2>&1 &
     sleep 1.5
 
-    # 2. Добавление временных nftables правил
+    # 2. Добавление временных nftables правил (направляем весь HTTPS на тестовую очередь)
     nft add table inet "$TEST_TABLE" 2>/dev/null
     nft add chain inet "$TEST_TABLE" output { type filter hook output priority 0 \; } 2>/dev/null
-    nft add rule inet "$TEST_TABLE" output tcp dport 443 tls sni "$TEST_HOST" counter queue num $TEST_QUEUE bypass 2>/dev/null
-    nft add rule inet "$TEST_TABLE" output tcp dport 443 tls sni "www.$TEST_HOST" counter queue num $TEST_QUEUE bypass 2>/dev/null
+    nft add rule inet "$TEST_TABLE" output tcp dport 443 counter queue num $TEST_QUEUE bypass 2>/dev/null
 
     # 3. Запрос
     http_code=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout $TIMEOUT "$TEST_URL" 2>/dev/null)
