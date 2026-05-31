@@ -48,7 +48,7 @@ ensure_named_main() {
 		return 0
 	}
 
-	uci -q rename "$fallback=ytunblock"
+	uci -q rename "ytunblock.$fallback=ytunblock"
 	uci -q set ytunblock.ytunblock=ytunblock
 }
 

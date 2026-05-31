@@ -117,10 +117,65 @@ return view.extend({
 					E('button', {
 						class: 'btn cbi-button-apply',
 						click: function(ev) {
+							return runCommand('/usr/libexec/ytunblock/apply-preset.sh', ['russia_balanced_discord'], ev.currentTarget);
+						}
+					}, _('РФ + Discord')),
+					' ',
+					E('button', {
+						class: 'btn cbi-button-apply',
+						click: function(ev) {
 							return runCommand('/usr/libexec/ytunblock/apply-preset.sh', ['russia_aggressive'], ev.currentTarget);
 						}
 					}, _('РФ — агрессивный'))
 				]),
+
+				E('h3', { style: 'margin-top:1.5rem' }, _('Автоматический подбор настроек')),
+				E('div', { class: 'cbi-section-descr' }, _(
+					'Запускает проверку различных параметров фрагментации и подмены SNI. Находит рабочую конфигурацию для вашей сети и применяет её автоматически. Процесс занимает около 30 секунд.'
+				)),
+				E('div', { class: 'right', style: 'margin-bottom:1rem' }, [
+					E('button', {
+						class: 'btn cbi-button cbi-button-action',
+						id: 'yt-scan-btn',
+						click: function(ev) {
+							var btn = ev.currentTarget;
+							setBusy(btn, true);
+							var logArea = document.getElementById('yt-scan-log');
+							if (logArea) logArea.value = _('Запуск сканирования...\n');
+							
+							var timer = setInterval(function() {
+								fs.exec_direct('/bin/cat', ['/var/log/ytunblock-scan.log']).then(function(logs) {
+									if (logArea && logs) {
+										logArea.value = logs;
+										logArea.scrollTop = logArea.scrollHeight;
+									}
+								}).catch(function() {});
+							}, 1000);
+							
+							return fs.exec_direct('/usr/libexec/ytunblock/scan-strategies.sh').then(function(res) {
+								return fs.exec_direct('/bin/cat', ['/var/log/ytunblock-scan.log']).then(function(logs) {
+									if (logArea) {
+										logArea.value = logs + '\n' + _('Подбор завершен!');
+										logArea.scrollTop = logArea.scrollHeight;
+									}
+								});
+							}).catch(function(err) {
+								if (logArea) logArea.value += '\n' + _('Произошла ошибка во время сканирования: ') + err;
+							}).finally(function() {
+								clearInterval(timer);
+								setBusy(btn, false);
+							});
+						}
+					}, _('Начать подбор настроек'))
+				]),
+				E('textarea', {
+					id: 'yt-scan-log',
+					readonly: 'readonly',
+					rows: 10,
+					wrap: 'off',
+					placeholder: _('Здесь будет отображаться процесс тестирования стратегий...'),
+					style: 'width:100%;font-family:monospace;background:#f5f5f5;border:1px solid #ddd;padding:5px;'
+				}),
 
 				E('h3', { style: 'margin-top:1.5rem' }, _('Что реально запущено')),
 				E('textarea', {

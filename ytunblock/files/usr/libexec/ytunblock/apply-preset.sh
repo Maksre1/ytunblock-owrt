@@ -5,7 +5,7 @@ PRESET="$1"
 DIR="/usr/share/ytunblock/presets"
 
 case "$PRESET" in
-	default|russia_balanced|russia_aggressive|lite)
+	default|russia_balanced|russia_balanced_discord|russia_aggressive|lite)
 		[ -x "$DIR/${PRESET}.sh" ] && exec "$DIR/${PRESET}.sh"
 		;;
 esac
