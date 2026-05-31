@@ -76,4 +76,21 @@ fi
 rm -f /tmp/.uci/ytunblock
 cp "$TEMPLATE" "$CONFIG"
 
+# Автоматически патчим sing-box для обхода Fake-IP при применении пресета
+if [ "$FORCE" -eq 1 ] && [ -f /etc/sing-box/config.json ] && [ -x /usr/bin/jq ]; then
+	SB_CONF="/etc/sing-box/config.json"
+	SB_TMP="/tmp/sing-box-patched.json"
+	if jq 'if (.dns.rules | any(.rule_set == "vpn_exclusion-user-domains-ruleset" and .server == "dns-server")) then . else .dns.rules |= ( [ .[0], .[1], {"action": "route", "server": "dns-server", "rule_set": "vpn_exclusion-user-domains-ruleset"} ] + .[2:] ) end | .dns.rules |= map(if .server == "fakeip-server" and (.rule_set | type) == "array" then .rule_set |= map(select(. != "vpn_exclusion-user-domains-ruleset")) else . end)' "$SB_CONF" > "$SB_TMP" 2>/dev/null; then
+		if ! cmp -s "$SB_CONF" "$SB_TMP"; then
+			mv "$SB_TMP" "$SB_CONF"
+			/etc/init.d/sing-box restart 2>/dev/null || true
+		else
+			rm -f "$SB_TMP"
+		fi
+	else
+		rm -f "$SB_TMP"
+	fi
+fi
+
 [ "$FORCE" -eq 1 ] && /etc/init.d/ytunblock restart 2>/dev/null
+
