@@ -1,0 +1,8 @@
+# Добавьте в feeds.conf.default вашего OpenWrt SDK / buildroot:
+src-git ytunblock https://github.com/YOUR_USER/ytunblock-owrt.git;main
+
+# Затем:
+# ./scripts/feeds update ytunblock
+# ./scripts/feeds install -a -p ytunblock
+# make package/ytunblock/compile V=s
+# make package/luci-app-ytunblock/compile V=s

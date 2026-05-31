@@ -1,0 +1,16 @@
+name: Build packages
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Shellcheck
+        run: |
+          sudo apt-get install -y shellcheck
+          find . -name '*.sh' -not -path './.git/*' | xargs shellcheck -e SC2034,SC2086

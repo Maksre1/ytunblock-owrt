@@ -1,0 +1,36 @@
+{
+	"luci-app-ytunblock": {
+		"description": "YT Unblock LuCI access",
+		"read": {
+			"cgi-io": [ "exec" ],
+			"file": {
+				"/etc/init.d/ytunblock": [ "exec" ],
+				"/etc/init.d/ytunblock status": [ "exec" ],
+				"/etc/init.d/ytunblock enabled": [ "exec" ],
+				"/etc/init.d/ytunblock start": [ "exec" ],
+				"/etc/init.d/ytunblock stop": [ "exec" ],
+				"/etc/init.d/ytunblock restart": [ "exec" ],
+				"/etc/init.d/ytunblock enable": [ "exec" ],
+				"/etc/init.d/ytunblock disable": [ "exec" ],
+				"/etc/init.d/firewall reload": [ "exec" ],
+				"/usr/bin/youtubeUnblock --version": [ "exec" ],
+				"/usr/libexec/ytunblock/status-json.sh": [ "exec" ],
+				"/usr/libexec/ytunblock/apply-preset.sh": [ "exec" ],
+				"/usr/share/ytunblock/defaults.sh": [ "exec" ],
+				"/usr/share/ytunblock/defaults.sh --force": [ "exec" ],
+				"/sbin/logread -e ytunblock -l [0-9]*": [ "exec" ],
+				"/sbin/logread -e youtubeUnblock -l [0-9]*": [ "exec" ],
+				"/usr/sbin/logread -e ytunblock -l [0-9]*": [ "exec" ],
+				"/usr/sbin/logread -e youtubeUnblock -l [0-9]*": [ "exec" ],
+				"/usr/bin/nft list chain inet fw4 ytunblock": [ "exec" ],
+				"/usr/sbin/nft list chain inet fw4 ytunblock": [ "exec" ],
+				"/usr/bin/lsmod": [ "exec" ],
+				"/sbin/lsmod": [ "exec" ]
+			},
+			"uci": [ "ytunblock" ]
+		},
+		"write": {
+			"uci": [ "ytunblock" ]
+		}
+	}
+}

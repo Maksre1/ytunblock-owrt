@@ -1,0 +1,80 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: ytunblock 1.0\n"
+"Language: ru\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "YT Unblock"
+msgstr "YT Unblock"
+
+msgid "Overview"
+msgstr "Обзор"
+
+msgid "Settings"
+msgstr "Настройки"
+
+msgid "Diagnostics"
+msgstr "Диагностика"
+
+msgid "Running"
+msgstr "Работает"
+
+msgid "Stopped"
+msgstr "Остановлена"
+
+msgid "OK"
+msgstr "ОК"
+
+msgid "Missing"
+msgstr "Отсутствует"
+
+msgid "Enabled"
+msgstr "Включён"
+
+msgid "Disabled"
+msgstr "Выключен"
+
+msgid "Loading…"
+msgstr "Загрузка…"
+
+msgid "Default"
+msgstr "По умолчанию"
+
+msgid "Lite"
+msgstr "Лёгкий"
+
+msgid "Russia — balanced"
+msgstr "РФ — сбалансированный"
+
+msgid "Russia — aggressive"
+msgstr "РФ — агрессивный"
+
+msgid "Start"
+msgstr "Старт"
+
+msgid "Stop"
+msgstr "Стоп"
+
+msgid "Restart"
+msgstr "Перезапуск"
+
+msgid "Reload firewall"
+msgstr "Перезагрузить firewall"
+
+msgid "Reset configuration"
+msgstr "Сброс конфигурации"
+
+msgid "Enable autostart"
+msgstr "Включить автозапуск"
+
+msgid "Disable autostart"
+msgstr "Отключить автозапуск"
+
+msgid "No log entries yet"
+msgstr "Записей пока нет"
+
+msgid "Enable service"
+msgstr "Включить службу"
+
+msgid "Configuration mode"
+msgstr "Режим конфигурации"

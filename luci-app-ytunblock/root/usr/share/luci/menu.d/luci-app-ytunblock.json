@@ -1,0 +1,42 @@
+{
+	"admin/services/ytunblock": {
+		"title": "YT Unblock",
+		"order": 55,
+		"action": {
+			"type": "alias",
+			"path": "admin/services/ytunblock/dashboard"
+		},
+		"depends": {
+			"acl": [ "luci-app-ytunblock" ],
+			"fs": {
+				"/usr/bin/youtubeUnblock": "executable",
+				"/etc/init.d/ytunblock": "executable"
+			},
+			"uci": { "ytunblock": true }
+		}
+	},
+	"admin/services/ytunblock/dashboard": {
+		"title": "Обзор",
+		"order": 10,
+		"action": {
+			"type": "view",
+			"path": "ytunblock/dashboard"
+		}
+	},
+	"admin/services/ytunblock/settings": {
+		"title": "Настройки",
+		"order": 20,
+		"action": {
+			"type": "view",
+			"path": "ytunblock/settings"
+		}
+	},
+	"admin/services/ytunblock/diagnostics": {
+		"title": "Диагностика",
+		"order": 30,
+		"action": {
+			"type": "view",
+			"path": "ytunblock/diagnostics"
+		}
+	}
+}
