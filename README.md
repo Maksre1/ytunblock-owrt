@@ -1,90 +1,139 @@
-# ytunblock-owrt
+# YT Unblock 🦎 (ytunblock-owrt)
 
-Форк [Waujito/youtubeUnblock](https://github.com/Waujito/youtubeUnblock) для **OpenWrt 23.x–25.x** с улучшенным веб-интерфейсом LuCI.
+> **Улучшенный обход блокировок и замедления YouTube и Discord для роутеров OpenWrt 23.x–25.x с современным LuCI веб-интерфейсом.**
 
-## Возможности
+Этот проект является форком оригинального инструмента [Waujito/youtubeUnblock](https://github.com/Waujito/youtubeUnblock). Мы переработали интеграцию с OpenWrt, добавили поддержку современных выпусков OpenWrt 25 (пакетный менеджер `apk` и `firewall4`), внедрили новые профили обхода (включая Discord) и встроили **автоматический сканер-тюнер стратегий** прямо в интерфейс роутера.
 
-- Сборка демона `youtubeUnblock` из upstream (v1.3.0+)
-- Пакет `ytunblock` с procd, автоперезапуском и UCI `/etc/config/ytunblock`
-- Правила **nftables** для firewall4
-- **LuCI**: обзор, настройки, диагностика, быстрые профили
-- Профили: по умолчанию, лёгкий, РФ сбалансированный, РФ агрессивный
-- Миграция конфига с `youtubeUnblock` → `ytunblock`
-- Поддержка **apk** (OpenWrt 25) и **opkg**
+---
 
-## Установка на роутер
+## 🌟 Основные особенности и улучшения
 
-### Из feed (рекомендуется)
+*   **⚡ Умный автоподбор стратегий (Tuner)**: Встроенный скрипт `/usr/libexec/ytunblock/scan-strategies.sh` тестирует 8 различных стратегий фрагментации и подмены SNI на временной nftables-очереди. Он находит рабочую комбинацию конкретно для вашего провайдера и автоматически применяет её без разрыва основного интернет-соединения.
+*   **🎮 Разблокировка Discord**: Добавлен новый сбалансированный профиль `russia_balanced_discord`, который автоматически разблокирует голосовые каналы, медиасерверы и API Discord наряду с YouTube.
+*   **🎨 Премиальный LuCI интерфейс**: Современные адаптивные JavaScript-страницы (Dashboard, Settings, Diagnostics) с выводом логов службы, диагностикой статуса ядра и модулей в реальном времени, а также кнопкой запуска сканирования в один клик.
+*   **🛠️ Надежность (procd)**: Полноценная интеграция с демоном инициализации OpenWrt (`procd`). Автоматический перезапуск (respawn) при падении процесса и корректный триггер при обновлении сети.
+*   **🛡️ Безопасность и чистота**: Правила обхода интегрированы напрямую в `firewall4 (nftables)` через каталог `/usr/share/nftables.d/`. Никаких ручных хаков таблиц iptables.
 
+---
+
+## 📦 Способы установки
+
+### Метод 1: Сборка через OpenWrt SDK (Рекомендуемый)
+
+Если вы собираете прошивку самостоятельно или используете SDK:
+
+1. Добавьте фид в файл `feeds.conf` вашего SDK:
+   ```sh
+   echo 'src-git ytunblock https://github.com/Maksre1/ytunblock-owrt.git;main' >> feeds.conf
+   ```
+2. Обновите и установите пакеты в дерево сборки:
+   ```sh
+   ./scripts/feeds update ytunblock
+   ./scripts/feeds install ytunblock luci-app-ytunblock
+   ```
+3. Скомпилируйте пакеты:
+   ```sh
+   make package/ytunblock/compile package/luci-app-ytunblock/compile V=s
+   ```
+4. Скопируйте полученные `.ipk` (OpenWrt 23–24) или `.apk` (OpenWrt 25) на роутер и установите их.
+
+---
+
+### Метод 2: Быстрая ручная установка скриптов (Альтернативный)
+
+Если на вашем роутере уже установлен оригинальный пакет `youtubeUnblock`, но вы хотите обновить скрипты интеграции, логику пресетов, автоподбор и получить новый интерфейс LuCI:
+
+Запустите команду в терминале роутера (требуются установленные `curl` и `ca-bundle`):
 ```sh
-# В каталоге OpenWrt SDK / buildroot:
-echo 'src-git ytunblock https://github.com/Maksre1/ytunblock-owrt.git;main' >> feeds.conf
-./scripts/feeds update ytunblock
-./scripts/feeds install ytunblock luci-app-ytunblock
-make package/ytunblock/compile package/luci-app-ytunblock/compile V=s
+wget -qO- https://raw.githubusercontent.com/Maksre1/ytunblock-owrt/main/install-scripts.sh | sh
 ```
+*Скрипт автоматически заменит старые файлы интеграции youtubeUnblock на ytunblock, настроит симлинки, пропишет новые nftables правила и перезапустит веб-сервер uhttpd.*
 
-Скопируйте `.ipk` / `.apk` из `bin/packages/...` на роутер и установите:
+---
 
+## 🛠️ Зависимости ядра
+
+Убедитесь, что в системе установлены модули ядра для работы с очередями netfilter (устанавливаются автоматически при сборке пакета):
 ```sh
-# OpenWrt 25 (apk)
-apk add ./ytunblock_*.apk ./luci-app-ytunblock_*.apk
-
-# OpenWrt 23–24 (opkg)
-opkg install ./ytunblock_*.ipk ./luci-app-ytunblock_*.ipk
-```
-
-### Зависимости
-
-```sh
+# Для OpenWrt 25 (apk)
 apk add kmod-nft-queue kmod-nf-conntrack firewall4
-# или
-opkg install kmod-nft-queue kmod-nf-conntrack
+
+# Для OpenWrt 23 (opkg)
+opkg update && opkg install kmod-nft-queue kmod-nf-conntrack
 ```
 
-После установки: **Службы → YT Unblock** в LuCI, либо:
+---
 
+## 🚀 Управление из CLI
+
+### Переключение профилей
+В комплекте поставляются преднастроенные профили обхода. Применение профиля сбрасывает UCI настройки на базовые и перезапускает службу:
+
+*   **Сбалансированный РФ (Только YouTube)**:
+    ```sh
+    /usr/libexec/ytunblock/apply-preset.sh russia_balanced
+    ```
+*   **Сбалансированный РФ + Discord (YouTube + Discord)**:
+    ```sh
+    /usr/libexec/ytunblock/apply-preset.sh russia_balanced_discord
+    ```
+*   **Агрессивный РФ (Для жестких блокировок с фейк-пакетами)**:
+    ```sh
+    /usr/libexec/ytunblock/apply-preset.sh russia_aggressive
+    ```
+*   **Легкий профиль (Только минимальная фрагментация)**:
+    ```sh
+    /usr/libexec/ytunblock/apply-preset.sh lite
+    ```
+*   **По умолчанию (Сброс до стандартных настроек)**:
+    ```sh
+    /usr/libexec/ytunblock/apply-preset.sh default
+    ```
+
+### Автоматический подбор параметров (Tuner)
+Если YouTube перестает работать, запустите сканер:
 ```sh
-/etc/init.d/ytunblock enable
-/etc/init.d/ytunblock start
-/etc/init.d/firewall reload
+/usr/libexec/ytunblock/scan-strategies.sh
 ```
+Скрипт временно приостановит работу основной службы, поочередно протестирует 8 стратегий обхода (замеряя HTTP-коды ответов от серверов Google), сохранит рабочую комбинацию в UCI и запустит службу заново. Лог сканирования пишется в `/var/log/ytunblock-scan.log`.
 
-## LuCI
+---
 
-| Раздел | Описание |
-|--------|----------|
-| **Обзор** | Статус, зависимости, профили, журнал |
-| **Настройки** | Полная конфигурация (TLS, UDP, домены) |
-| **Диагностика** | Модули ядра, nftables |
+## 📋 Управление UCI
+Базовые команды управления конфигурацией службы:
 
-## Профили (CLI)
+*   **Включение автозапуска**:
+    ```sh
+    /etc/init.d/ytunblock enable
+    ```
+*   **Запуск службы**:
+    ```sh
+    /etc/init.d/ytunblock start
+    ```
+*   **Включение обхода в UCI**:
+    ```sh
+    uci set ytunblock.ytunblock.enabled='1'
+    uci commit ytunblock
+    /etc/init.d/ytunblock restart
+    ```
 
-```sh
-/usr/libexec/ytunblock/apply-preset.sh russia_balanced
-/usr/libexec/ytunblock/apply-preset.sh lite
-/usr/libexec/ytunblock/apply-preset.sh default
-```
+---
 
-## UCI
+## ⚙️ Сравнение с оригиналом (upstream)
 
-```sh
-uci set ytunblock.ytunblock.enabled=1
-uci commit ytunblock
-/etc/init.d/ytunblock restart
-```
+| Функция | youtubeUnblock (Оригинал) | ytunblock-owrt (Этот форк) |
+| :--- | :---: | :---: |
+| **Имя UCI и службы** | `youtubeUnblock` | `ytunblock` (с миграцией) |
+| **Режим службы** | Простой запуск | `procd` с автоперезапуском (respawn) |
+| **Поддержка OpenWrt 25** | Частично | Полная (apk, зависимости) |
+| **Профили обхода** | Нет | Встроены (включая Discord) |
+| **Автоподбор (Tuner)** | Нет | Встроен (CLI + веб-интерфейс) |
+| **Интерфейс LuCI** | Базовый | Логи, статус ядра, интерактивный автоподбор |
 
-## Отличия от upstream
+---
 
-| | youtubeUnblock | ytunblock-owrt |
-|---|----------------|----------------|
-| Конфиг UCI | `youtubeUnblock` | `ytunblock` (+ миграция) |
-| Init | `youtubeUnblock` | `ytunblock` + respawn |
-| LuCI | базовый | профили, диагностика, RU |
-| OpenWrt 25 | частично | apk, явные DEPENDS |
+## 📄 Лицензия
 
-## Лицензия
+Исходный код демона распространяется под лицензией **GPL-3.0** (в соответствии с оригинальным проектом). Скрипты интеграции и веб-интерфейс LuCI распространяются под лицензией **GPL-3.0**.
 
-Демон — **GPL-3.0** (как upstream). Пакеты и LuCI — GPL-3.0.
-
-Используйте **только для YouTube** в соответствии с законодательством вашей страны.
+*Используйте данный инструмент исключительно в целях восстановления доступа к образовательным, техническим и медиа-ресурсам в соответствии с законодательством вашей страны.*
