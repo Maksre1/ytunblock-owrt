@@ -14,6 +14,7 @@
 				"/etc/init.d/ytunblock disable": [ "exec" ],
 				"/etc/init.d/firewall reload": [ "exec" ],
 				"/usr/bin/youtubeUnblock --version": [ "exec" ],
+				"/usr/libexec/ytunblock/build-command.sh": [ "exec" ],
 				"/usr/libexec/ytunblock/status-json.sh": [ "exec" ],
 				"/usr/libexec/ytunblock/apply-preset.sh": [ "exec" ],
 				"/usr/share/ytunblock/defaults.sh": [ "exec" ],

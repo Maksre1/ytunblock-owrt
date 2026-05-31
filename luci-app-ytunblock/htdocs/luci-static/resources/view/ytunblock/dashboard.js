@@ -2,188 +2,209 @@
 'require view';
 'require poll';
 'require fs';
-'require ui';
-'require uci';
 'require form';
 
-function btnSpin(el, on) {
-	if (!el) return;
-	el.classList.toggle('spinning', on);
-	el.classList.toggle('disabled', on);
+function setBusy(node, on) {
+	if (!node)
+		return;
+	node.classList.toggle('spinning', on);
+	node.classList.toggle('disabled', on);
 }
 
-function runAction(act, ev) {
-	const t = ev.target;
-	btnSpin(t, true);
-	const done = () => btnSpin(t, false);
-
-	if (act === 'restart')
-		return fs.exec_direct('/etc/init.d/ytunblock', ['restart']).then(done);
-	if (act === 'fw')
-		return fs.exec_direct('/etc/init.d/firewall', ['reload']).then(done);
-	if (act === 'start')
-		return fs.exec_direct('/etc/init.d/ytunblock', ['start']).then(done);
-	if (act === 'stop')
-		return fs.exec_direct('/etc/init.d/ytunblock', ['stop']).then(done);
-	if (act === 'enable')
-		return fs.exec_direct('/etc/init.d/ytunblock', ['enable']).then(done);
-	if (act === 'disable')
-		return fs.exec_direct('/etc/init.d/ytunblock', ['disable']).then(done);
-	if (act === 'reset')
-		return fs.exec_direct('/usr/share/ytunblock/defaults.sh', ['--force'])
-			.then(() => fs.exec_direct('/etc/init.d/ytunblock', ['restart']))
-			.then(done);
-	if (act.startsWith('preset:'))
-		return fs.exec_direct('/usr/libexec/ytunblock/apply-preset.sh', [act.split(':')[1]])
-			.then(done);
-	done();
+function badge(kind, text) {
+	return E('span', { class: 'label ' + kind }, [text]);
 }
 
-function statusBadge(st) {
-	const map = {
-		running: ['label success', _('Running')],
-		inactive: ['label', _('Stopped')],
-	};
-	const m = map[st] || ['label warning', st];
-	return E('span', { class: m[0] }, [m[1]]);
-}
-
-function depBadge(ok) {
-	return E('span', { class: ok ? 'label success' : 'label important' },
-		[ok ? _('OK') : _('Missing')]);
+function runCommand(cmd, args, button) {
+	setBusy(button, true);
+	return fs.exec_direct(cmd, args || []).finally(function() {
+		setBusy(button, false);
+	});
 }
 
 return view.extend({
-	load() {
-		return uci.load('ytunblock');
-	},
+	render: function() {
+		var m = new form.Map('ytunblock', _('YT Unblock'),
+			_('Спокойная настройка обхода YouTube для OpenWrt. Здесь можно быстро проверить состояние службы, применить готовый профиль и посмотреть журнал без ручной работы в консоли.'));
 
-	render() {
-		const m = new form.Map('ytunblock', _('YT Unblock'),
-			_('Обход DPI для YouTube. Основано на <a href="https://github.com/Waujito/youtubeUnblock" target="_blank">youtubeUnblock</a>.'));
-
-		const s = m.section(form.NamedSection, '_dash');
+		var s = m.section(form.NamedSection, '_dashboard');
 		s.anonymous = true;
-		s.render = () => E('div', { class: 'cbi-section' }, [
-			E('h3', _('Статус')),
-			E('div', { class: 'cbi-value' }, [
-				E('label', { class: 'cbi-value-title' }, _('Служба')),
-				E('div', { class: 'cbi-value-field', id: 'ytb_status' }, E('em', _('Loading…')))
-			]),
-			E('div', { class: 'cbi-value' }, [
-				E('label', { class: 'cbi-value-title' }, _('Версия')),
-				E('div', { class: 'cbi-value-field', id: 'ytb_version' }, '—')
-			]),
-			E('div', { class: 'cbi-value' }, [
-				E('label', { class: 'cbi-value-title' }, _('Автозапуск')),
-				E('div', { class: 'cbi-value-field', id: 'ytb_autostart' }, '—')
-			]),
-			E('div', { class: 'cbi-value' }, [
-				E('label', { class: 'cbi-value-title' }, _('PID')),
-				E('div', { class: 'cbi-value-field', id: 'ytb_pid' }, '—')
-			]),
-			E('h3', { style: 'margin-top:1.5rem' }, _('Зависимости')),
-			E('div', { class: 'cbi-value' }, [
-				E('label', { class: 'cbi-value-title' }, 'kmod-nft-queue'),
-				E('div', { class: 'cbi-value-field', id: 'ytb_kmod_queue' }, '—')
-			]),
-			E('div', { class: 'cbi-value' }, [
-				E('label', { class: 'cbi-value-title' }, 'nf_conntrack'),
-				E('div', { class: 'cbi-value-field', id: 'ytb_kmod_ct' }, '—')
-			]),
-			E('div', { class: 'cbi-value' }, [
-				E('label', { class: 'cbi-value-title' }, _('nftables')),
-				E('div', { class: 'cbi-value-field', id: 'ytb_nft' }, '—')
-			]),
-			E('h3', { style: 'margin-top:1.5rem' }, _('Быстрые профили')),
-			E('p', { class: 'cbi-section-descr' },
-				_('Профили перезаписывают текущую конфигурацию и перезапускают службу.')),
-			E('div', { class: 'right' }, [
-				E('button', { class: 'btn cbi-button', click: e => runAction('preset:default', e) },
-					[_('По умолчанию')]),
-				' ',
-				E('button', { class: 'btn cbi-button', click: e => runAction('preset:lite', e) },
-					[_('Лёгкий')]),
-				' ',
-				E('button', { class: 'btn cbi-button-apply', click: e => runAction('preset:russia_balanced', e) },
-					[_('РФ — сбалансированный')]),
-				' ',
-				E('button', { class: 'btn cbi-button-apply', click: e => runAction('preset:russia_aggressive', e) },
-					[_('РФ — агрессивный')]),
-			]),
-			E('h3', { style: 'margin-top:1.5rem' }, _('Управление')),
-			E('div', { class: 'right' }, [
-				E('button', { class: 'btn cbi-button-positive', id: 'btn_start', click: e => runAction('start', e) }, [_('Старт')]),
-				' ',
-				E('button', { class: 'btn cbi-button-negative', id: 'btn_stop', click: e => runAction('stop', e) }, [_('Стоп')]),
-				' ',
-				E('button', { class: 'btn cbi-button-apply', click: e => runAction('restart', e) }, [_('Перезапуск')]),
-				' ',
-				E('button', { class: 'btn cbi-button', id: 'btn_autostart', click: e => runAction('enable', e) }, [_('Автозапуск')]),
-				' ',
-				E('button', { class: 'btn cbi-button', click: e => runAction('fw', e) }, [_('Перезагрузить firewall')]),
-				' ',
-				E('button', { class: 'btn cbi-button-negative', click: e => runAction('reset', e) }, [_('Сброс конфигурации')]),
-			]),
-			E('h3', { style: 'margin-top:1.5rem' }, _('Журнал')),
-			E('textarea', {
-				id: 'ytb_log',
-				readonly: 'readonly',
-				style: 'width:100%;font-family:monospace;font-size:12px',
-				rows: 18
-			})
-		]);
+		s.render = function() {
+			return E('div', { class: 'cbi-section' }, [
+				E('div', { class: 'cbi-section-descr' }, _(
+					'Если YouTube открывается, но часть видео или каналов не загружается, начните с профиля «РФ — сбалансированный». Если всё уже работает стабильно, лучше не крутить лишние параметры.'
+				)),
 
-		poll.add(() => {
-			return fs.exec_direct('/usr/libexec/ytunblock/status-json.sh').then(raw => {
-				let d = {};
-				try { d = JSON.parse(raw.trim()); } catch (e) { return; }
+				E('h3', _('Сейчас')),
+				E('div', { class: 'cbi-value' }, [
+					E('label', { class: 'cbi-value-title' }, _('Служба')),
+					E('div', { class: 'cbi-value-field', id: 'yt-status' }, E('em', _('Проверяю…')))
+				]),
+				E('div', { class: 'cbi-value' }, [
+					E('label', { class: 'cbi-value-title' }, _('Автозапуск')),
+					E('div', { class: 'cbi-value-field', id: 'yt-autostart' }, '—')
+				]),
+				E('div', { class: 'cbi-value' }, [
+					E('label', { class: 'cbi-value-title' }, _('Версия')),
+					E('div', { class: 'cbi-value-field', id: 'yt-version' }, '—')
+				]),
+				E('div', { class: 'cbi-value' }, [
+					E('label', { class: 'cbi-value-title' }, _('Правило firewall')),
+					E('div', { class: 'cbi-value-field', id: 'yt-firewall' }, '—')
+				]),
 
-				const st = document.getElementById('ytb_status');
-				if (st) st.replaceChildren(statusBadge(d.status));
-
-				const ver = document.getElementById('ytb_version');
-				if (ver) ver.textContent = d.version || '—';
-
-				const as = document.getElementById('ytb_autostart');
-				if (as) as.textContent = d.autostart === 'enabled' ? _('Enabled') : _('Disabled');
-
-				const pid = document.getElementById('ytb_pid');
-				if (pid) pid.textContent = d.pid || '—';
-
-				const kq = document.getElementById('ytb_kmod_queue');
-				if (kq) kq.replaceChildren(depBadge(d.kmod_nft_queue === 'loaded'));
-
-				const kc = document.getElementById('ytb_kmod_ct');
-				if (kc) kc.replaceChildren(depBadge(d.kmod_nf_conntrack === 'loaded'));
-
-				const nft = document.getElementById('ytb_nft');
-				if (nft) {
-					const ok = d.nft_rule === 'ok' || d.nft_rule === 'legacy';
-					nft.replaceChildren(depBadge(ok));
-					if (d.nft_rule === 'legacy')
-						nft.appendChild(document.createTextNode(' (youtubeUnblock)'));
-				}
-
-				const btnAs = document.getElementById('btn_autostart');
-				if (btnAs) {
-					btnAs.textContent = d.autostart === 'enabled' ? _('Отключить автозапуск') : _('Включить автозапуск');
-					btnAs.onclick = e => runAction(d.autostart === 'enabled' ? 'disable' : 'enable', e);
-				}
-			}).then(() => {
-				return fs.exec_direct('/sbin/logread', ['-e', 'ytunblock', '-l', '150'])
-					.catch(() => fs.exec_direct('/sbin/logread', ['-e', 'youtubeUnblock', '-l', '150']))
-					.then(res => {
-						const log = document.getElementById('ytb_log');
-						if (log) {
-							log.value = (res && res.trim()) ? res.trim() : _('Записей пока нет');
-							log.scrollTop = log.scrollHeight;
+				E('h3', { style: 'margin-top:1.5rem' }, _('Быстрые действия')),
+				E('div', { class: 'right' }, [
+					E('button', {
+						class: 'btn cbi-button cbi-button-positive',
+						id: 'yt-start-stop',
+						click: function(ev) {
+							var mode = ev.currentTarget.getAttribute('data-mode') || 'start';
+							return runCommand('/etc/init.d/ytunblock', [mode], ev.currentTarget);
 						}
-					});
+					}, _('Запустить')),
+					' ',
+					E('button', {
+						class: 'btn cbi-button cbi-button-apply',
+						click: function(ev) {
+							return runCommand('/etc/init.d/ytunblock', ['restart'], ev.currentTarget);
+						}
+					}, _('Перезапустить')),
+					' ',
+					E('button', {
+						class: 'btn cbi-button',
+						id: 'yt-autostart-btn',
+						click: function(ev) {
+							var mode = ev.currentTarget.getAttribute('data-mode') || 'enable';
+							return runCommand('/etc/init.d/ytunblock', [mode], ev.currentTarget);
+						}
+					}, _('Автозапуск')),
+					' ',
+					E('button', {
+						class: 'btn cbi-button',
+						click: function(ev) {
+							return runCommand('/etc/init.d/firewall', ['reload'], ev.currentTarget);
+						}
+					}, _('Обновить firewall'))
+				]),
+
+				E('h3', { style: 'margin-top:1.5rem' }, _('Готовые профили')),
+				E('div', { class: 'cbi-section-descr' }, _(
+					'Профиль меняет конфигурацию и сразу перезапускает службу. Для большинства сетей достаточно «По умолчанию» или «РФ — сбалансированный».'
+				)),
+				E('div', { class: 'right' }, [
+					E('button', {
+						class: 'btn cbi-button',
+						click: function(ev) {
+							return runCommand('/usr/libexec/ytunblock/apply-preset.sh', ['default'], ev.currentTarget);
+						}
+					}, _('По умолчанию')),
+					' ',
+					E('button', {
+						class: 'btn cbi-button',
+						click: function(ev) {
+							return runCommand('/usr/libexec/ytunblock/apply-preset.sh', ['lite'], ev.currentTarget);
+						}
+					}, _('Лёгкий')),
+					' ',
+					E('button', {
+						class: 'btn cbi-button-apply',
+						click: function(ev) {
+							return runCommand('/usr/libexec/ytunblock/apply-preset.sh', ['russia_balanced'], ev.currentTarget);
+						}
+					}, _('РФ — сбалансированный')),
+					' ',
+					E('button', {
+						class: 'btn cbi-button-apply',
+						click: function(ev) {
+							return runCommand('/usr/libexec/ytunblock/apply-preset.sh', ['russia_aggressive'], ev.currentTarget);
+						}
+					}, _('РФ — агрессивный'))
+				]),
+
+				E('h3', { style: 'margin-top:1.5rem' }, _('Что реально запущено')),
+				E('textarea', {
+					id: 'yt-command',
+					readonly: 'readonly',
+					rows: 5,
+					wrap: 'off',
+					style: 'width:100%;font-family:monospace'
+				}),
+
+				E('h3', { style: 'margin-top:1.5rem' }, _('Последние события')),
+				E('textarea', {
+					id: 'yt-log',
+					readonly: 'readonly',
+					rows: 16,
+					wrap: 'off',
+					style: 'width:100%;font-family:monospace'
+				})
+			]);
+		};
+
+		poll.add(function() {
+			return fs.exec_direct('/usr/libexec/ytunblock/status-json.sh').then(function(raw) {
+				var data = {};
+				try { data = JSON.parse((raw || '').trim()); } catch (e) {}
+
+				var st = document.getElementById('yt-status');
+				if (st)
+					st.replaceChildren(data.status === 'running' ? badge('success', _('Работает')) : badge('', _('Остановлена')));
+
+				var as = document.getElementById('yt-autostart');
+				if (as)
+					as.textContent = data.autostart === 'enabled' ? _('Включён') : _('Выключен');
+
+				var ver = document.getElementById('yt-version');
+				if (ver)
+					ver.textContent = data.version || '—';
+
+				var fw = document.getElementById('yt-firewall');
+				if (fw) {
+					var ok = data.nft_rule === 'ok' || data.nft_rule === 'legacy';
+					fw.replaceChildren(ok ? badge('success', _('Готово')) : badge('important', _('Нужно обновить firewall')));
+				}
+
+				var toggle = document.getElementById('yt-start-stop');
+				if (toggle) {
+					var running = data.status === 'running';
+					toggle.textContent = running ? _('Остановить') : _('Запустить');
+					toggle.setAttribute('data-mode', running ? 'stop' : 'start');
+					toggle.className = running ? 'btn cbi-button cbi-button-negative' : 'btn cbi-button cbi-button-positive';
+				}
+
+				var asb = document.getElementById('yt-autostart-btn');
+				if (asb) {
+					var enabled = data.autostart === 'enabled';
+					asb.textContent = enabled ? _('Отключить автозапуск') : _('Включить автозапуск');
+					asb.setAttribute('data-mode', enabled ? 'disable' : 'enable');
+				}
+			}).then(function() {
+				return fs.exec_direct('/usr/bin/youtubeUnblock', ['--version']).then(function(res) {
+					var ver = document.getElementById('yt-version');
+					if (ver && (res || '').trim())
+						ver.textContent = (res || '').trim();
+				}).catch(function() {});
+			}).then(function() {
+				return fs.exec_direct('/sbin/logread', ['-e', 'ytunblock', '-l', '120']).catch(function() {
+					return fs.exec_direct('/sbin/logread', ['-e', 'youtubeUnblock', '-l', '120']);
+				}).then(function(res) {
+					var log = document.getElementById('yt-log');
+					if (log)
+						log.value = (res || '').trim() || _('Пока пусто');
+				});
+			}).then(function() {
+				return fs.exec_direct('/usr/libexec/ytunblock/build-command.sh', []).catch(function() { return ''; });
+			}).then(function(res) {
+				var cmd = document.getElementById('yt-command');
+				if (cmd)
+					cmd.value = (res || '').trim() || _('Команда пока недоступна');
 			});
 		}, 3);
 
-		m.handleSave = m.handleSaveApply = m.handleReset = null;
+		m.handleSave = null;
+		m.handleSaveApply = null;
+		m.handleReset = null;
 		return m.render();
 	}
 });

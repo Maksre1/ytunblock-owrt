@@ -1,20 +1,5 @@
 #!/bin/sh
-# Первичная настройка UCI и миграция с youtubeUnblock
+# Первичная настройка UCI, миграция и мягкое обновление схемы.
 
-# Миграция конфига с upstream-пакета youtubeUnblock
-if [ ! -s /etc/config/ytunblock ] && [ -s /etc/config/youtubeUnblock ]; then
-	cp /etc/config/youtubeUnblock /etc/config/ytunblock
-	sed -i 's/youtubeUnblock\.youtubeUnblock/ytunblock.ytunblock/g' /etc/config/ytunblock
-	sed -i 's/config youtubeUnblock/config ytunblock/g' /etc/config/ytunblock
-	uci commit ytunblock
-	exit 0
-fi
-
-# Пропуск если конфиг уже есть (кроме --force через defaults.sh)
-if [ "$1" != "--force" ] \
-	&& [ -n "$(uci -q get ytunblock.ytunblock)" ]; then
-	exit 0
-fi
-
-/usr/share/ytunblock/defaults.sh
+[ -x /usr/libexec/ytunblock/ensure-config.sh ] && /usr/libexec/ytunblock/ensure-config.sh
 exit 0

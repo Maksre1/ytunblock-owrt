@@ -44,6 +44,8 @@ define Package/ytunblock/install
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/build/youtubeUnblock $(1)/usr/bin/youtubeUnblock
 	$(LN) youtubeUnblock $(1)/usr/bin/ytunblock
+	$(INSTALL_DIR) $(1)/etc/config
+	$(INSTALL_CONF) ./files/etc/config/ytunblock $(1)/etc/config/ytunblock
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/etc/init.d/ytunblock $(1)/etc/init.d/ytunblock
 	$(INSTALL_DIR) $(1)/etc/uci-defaults
@@ -52,15 +54,23 @@ define Package/ytunblock/install
 	$(INSTALL_DATA) ./files/nftables.d/537-ytunblock.nft $(1)/usr/share/nftables.d/ruleset-post/537-ytunblock.nft
 	$(INSTALL_DIR) $(1)/usr/share/ytunblock
 	$(INSTALL_BIN) ./files/usr/share/ytunblock/defaults.sh $(1)/usr/share/ytunblock/defaults.sh
+	$(INSTALL_CONF) ./files/etc/config/ytunblock $(1)/usr/share/ytunblock/default.config
 	$(INSTALL_DIR) $(1)/usr/share/ytunblock/presets
 	$(INSTALL_BIN) ./files/usr/share/ytunblock/presets/*.sh $(1)/usr/share/ytunblock/presets/
 	$(INSTALL_DIR) $(1)/usr/libexec/ytunblock
 	$(INSTALL_BIN) ./files/usr/libexec/ytunblock/* $(1)/usr/libexec/ytunblock/
 endef
 
+define Package/ytunblock/conffiles
+/etc/config/ytunblock
+endef
+
 define Package/ytunblock/postinst
 #!/bin/sh
 [ -n "$${IPKG_INSTROOT}" ] && exit 0
+if [ -x /usr/libexec/ytunblock/ensure-config.sh ]; then
+	/usr/libexec/ytunblock/ensure-config.sh 2>/dev/null || true
+fi
 if [ -x /etc/init.d/firewall ]; then
 	/etc/init.d/firewall reload 2>/dev/null || true
 fi
